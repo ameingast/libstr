@@ -1,6 +1,6 @@
-#include "strlib.h"
-
 #include <string.h>
+
+#include "strlib.h"
 
 #ifndef STR_SIZE
   #define STR_SIZE 16
@@ -39,7 +39,9 @@ inline str_t *str_alloc_with(const char *s)
   if (NULL == (str = str_alloc())) {
     return NULL;
   }
-  str_set(s, str);
+  if (NULL == str_set(s, str)) {
+    return NULL;
+  }
   return str;
 }
 
@@ -67,13 +69,15 @@ inline str_t *str_set(const char *s, str_t *str)
 	if (0 == len) {
 		return str;
 	}
-	FREE(str->s);
-	if (NULL == (str->s = calloc(len, sizeof(char)))) {
-		str_free(str);
-		return NULL;
-	}
+	if (len > str->len) {
+	  FREE(str->s);
+	  if (NULL == (str->s = calloc(len, sizeof(char)))) {
+		  str_free(str);
+		  return NULL;
+	  }
+	  str->len = len;
+  }
 	strncpy(str->s, s, len);
-	str->len = len;
 	str->actual = len;
 	return str;
 }
@@ -102,6 +106,7 @@ inline str_t *str_append(const char *add, str_t *dst)
 	add_len = strlen(add);
 	if (dst->actual + add_len > dst->len) {
 		if (NULL == (dst->s = resize(dst->actual + add_len, dst))) {
+      str_free(dst);  
 			return NULL;
 		}
 	}

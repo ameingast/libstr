@@ -1,43 +1,43 @@
 CC          = gcc
 ECHO        = echo
 STRIP       = strip
-CFLAGS  		= -std=c99 -Wall -fnested-functions -O3 -fast -ffast-math -msse4.2 -mtune=core2
+CFLAGS  		= -std=c99 -Wall -fnested-functions -O3 -fast -ffast-math -msse4.2 -mtune=core2 -Iinclude
 LFLAGS  		= -ll
-TEST  			= test
-BM					= bm
-SRC         = strlib.c
-OBJ         = ${SRC:.c=.o}
+TEST  			= build/test
+BM					= build/bm
+SRC         = src/strlib.c
+OBJ         = ${SRC:src/%.c=build/%.o}
 
 all: $(TEST) $(BM)
-	@${ECHO} "[RUN]\t$(TEST)"
+	@${ECHO} "[EXEC]\t$(TEST)"
 	@./$(TEST)
-	@${ECHO} "[RUN]\t$(BM)"
+	@${ECHO} "[EXEC]\t$(BM)"
 	@./$(BM)
 
-$(TEST): $(OBJ) test.o
+$(TEST): $(OBJ) build/test.o
 	@${ECHO} "[LINK]\t$(TEST)"
-	@${CC} ${CFLAGS} ${OBJ} test.o -o $(TEST) $(LFLAGS)
+	@${CC} ${CFLAGS} ${OBJ} build/test.o -o $(TEST) $(LFLAGS)
 	@${ECHO} "[STRIP]\t$(TEST)"
 	@${STRIP} $(TEST)
 
-$(BM): $(OBJ) bm.o
+$(BM): $(OBJ) build/bm.o
 	@${ECHO} "[LINK]\t$(BM)"
-	@${CC} ${CFLAGS} ${OBJ} bm.o -o $(BM) $(LFLAGS)
+	@${CC} ${CFLAGS} ${OBJ} build/bm.o -o $(BM) $(LFLAGS)
 	@${ECHO} "[STRIP]\t$(BM)"
 	@${STRIP} $(BM)
 
-test.o: test.c
+build/test.o: src/test.c
 	@${ECHO} "[CC]\t$<"
 	@${CC} -c ${CFLAGS} -o $@ $<
 
-bm.o: bm.c
+build/bm.o: src/bm.c
 	@${ECHO} "[CC]\t$<"
 	@${CC} -c ${CFLAGS} -o $@ $<
 
-%.o: %.c
+build/%.o: $(SRC)
 	@${ECHO} "[CC]\t$<"
 	@${CC} -c ${CFLAGS} -o $@ $<
 
 clean:
 	@${ECHO} "[CLEAN]"
-	@rm -f $(TEST) $(BM) $(OBJ) bm.o test.o
+	@rm -f $(TEST) $(BM) $(OBJ) build/bm.o build/test.o

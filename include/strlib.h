@@ -12,8 +12,8 @@ void str_free(str_t *str);
 str_t *str_set(const char *s, str_t *dst);
 const char *str_get(str_t *str);
 
-str_t *str_append(const char *add, str_t *dst);
-str_t *str_append_str(str_t *add, str_t *dst);
+str_t *str_append(const char *src, str_t *dst);
+str_t *str_append_str(str_t *src, str_t *dst);
 
 size_t str_length(str_t *str);
 
