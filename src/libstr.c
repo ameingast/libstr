@@ -1,24 +1,24 @@
 #include <string.h>
+#include <alloca.h>
 
-#include "strlib.h"
+#include "libstr.h"
 
-#ifndef STR_SIZE
-  #define STR_SIZE 16
-#endif
+#define STR_SIZE 16
+#define HEAP 0
+#define STACK 1
 
-#ifndef FREE
-  #define FREE(x) do { free(x); x = NULL; } while (0)
-#endif
+#define FREE(x) do { if (x != NULL) { free(x); x = NULL; } } while (0)
 
 struct str_t_ {
   char *s;
   size_t len;
   size_t actual;
+  char mem_type;
 };
 
 inline str_t *str_alloc(void)
 {
-	str_t *str = NULL;
+	str_t *str;
 	
 	if (NULL == (str = malloc(sizeof(str_t)))) {
 		return NULL;
@@ -29,7 +29,24 @@ inline str_t *str_alloc(void)
 	}
 	str->len = STR_SIZE;
 	str->actual = 0;
+  str->mem_type = HEAP;
 	return str;
+}
+
+inline str_t *str_alloca(void)
+{
+  volatile str_t *str;
+	
+	if (NULL == (str = alloca(sizeof(str_t)))) {
+		return NULL;
+	}
+	if (NULL == (str->s = alloca(STR_SIZE * sizeof(char)))) {
+		return NULL;
+	}
+	str->len = STR_SIZE;
+	str->actual = 0;
+  str->mem_type = STACK;
+	return (str_t *)str;
 }
 
 inline str_t *str_alloc_with(const char *s)
@@ -45,14 +62,27 @@ inline str_t *str_alloc_with(const char *s)
   return str;
 }
 
+str_t *str_alloca_with(const char *s)
+{
+  volatile str_t *str;
+  
+  if (NULL == (str = str_alloca())) {
+    return NULL;
+  }
+  if (NULL == str_set(s, (str_t *)str)) {
+    return NULL;
+  }
+  return (str_t *)str;
+}
+
 inline void str_free(str_t *str)
 {
-	if (NULL != str) {
-		if (NULL != str->s) {
-			FREE(str->s);
-		}
-		FREE(str);
-	}
+  if (str->mem_type == HEAP && NULL != str) {
+  	if (NULL != str->s) {
+  		FREE(str->s);
+  	}
+  	FREE(str);
+  }
 }
 
 inline str_t *str_set(const char *s, str_t *str)
@@ -71,10 +101,16 @@ inline str_t *str_set(const char *s, str_t *str)
 	}
 	if (len > str->len) {
 	  FREE(str->s);
-	  if (NULL == (str->s = calloc(len, sizeof(char)))) {
-		  str_free(str);
-		  return NULL;
-	  }
+	  if (str->mem_type == HEAP) {
+  	  if (NULL == (str->s = calloc(len + 1, sizeof(char)))) {
+  		  str_free(str);
+  		  return NULL;
+  	  }	    
+	  } else {
+	    if (NULL == (str->s = alloca((len + 1) * sizeof(char)))) {
+		    return NULL;
+	    }
+    }
 	  str->len = len;
   }
 	strncpy(str->s, s, len);
@@ -103,10 +139,10 @@ inline str_t *str_append(const char *add, str_t *dst)
 	if (NULL == add || 0 == strlen(add) || NULL == dst) {
 		return dst;
 	}
-	add_len = strlen(add);
+	add_len = strlen(add) + 1;
 	if (dst->actual + add_len > dst->len) {
 		if (NULL == (dst->s = resize(dst->actual + add_len, dst))) {
-      str_free(dst);  
+      FREE(dst);
 			return NULL;
 		}
 	}
@@ -115,7 +151,7 @@ inline str_t *str_append(const char *add, str_t *dst)
 	return dst;
 }
 
-inline str_t *str_append_str(str_t *add, str_t *dst)
+inline str_t *str_join(str_t *add, str_t *dst)
 {
 	if (NULL == add || NULL == dst) {
 		return NULL;
