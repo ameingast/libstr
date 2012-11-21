@@ -125,10 +125,23 @@ inline const char *str_get(str_t *str)
 
 static inline char *resize(size_t len, str_t *str)
 {
-	if (NULL == (str->s = realloc(str->s, len))) {
-		return NULL;
-	}
-	str->len = len;
+  if (str->mem_type == HEAP) {
+	  if (NULL == (str->s = realloc(str->s, len))) {
+		  return NULL;
+	  }
+  } else {
+    char *ptr = str->s;
+    if (str->len * 2 + 1 < len) {
+      str->len = len;
+    } else {
+      str->len *= 2;
+      str->len += 1;
+    }
+    if (NULL == (str->s = alloca(str->len * sizeof(char)))) {
+      return NULL;
+    }
+    strncat(str->s, ptr, strlen(ptr));
+  }
 	return str->s;
 }
 

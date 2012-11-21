@@ -77,6 +77,16 @@ static inline void bm_str_append(void)
   for (int i = 0; i < BM_CNT; i++) str_free(ss[i]);
 }
 
+static inline void bm_str_append_alloca(void)
+{
+  str_t *ss[BM_CNT] = { NULL };
+  
+  for (int i = 0; i < BM_CNT; i++) ss[i] = str_alloca();
+  BMI("A str_append(small)", i, { str_append("foo", ss[i]); });
+  BMI("A str_append(big)", i, { str_append("123456789123456789123456789123456789123456789", ss[i]); });
+  BMI("A str_append(loop/10)", i, { for (int j = 0; j < 10; j++) str_append("123456789123456789123456789123456789123456789", ss[i]); });
+}
+
 static inline void bm_str_join(void)
 {
   str_t *ss[BM_CNT] = { NULL }, *aux[BM_CNT] = { NULL };
@@ -107,6 +117,7 @@ int main(int argc, char **argv)
   bm_str_alloca_with();
   bm_str_append();
   bm_str_join();
+  // bm_str_append_alloca();
   
   return 0;
 }
